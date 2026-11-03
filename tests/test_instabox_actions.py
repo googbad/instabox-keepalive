@@ -2,6 +2,8 @@ import json
 import os
 import sys
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from unittest.mock import MagicMock, patch
 from datetime import datetime, timezone
 
@@ -58,8 +60,10 @@ class BarkTests(unittest.TestCase):
     @patch("instabox_actions.urllib.request.urlopen")
     def test_bark_missing_secret_skips_request(self, mocked_open):
         with patch.dict(os.environ, {"BARK_URL": ""}):
-            self.assertFalse(controller.send_bark("title", "body"))
+            with redirect_stdout(StringIO()) as output:
+                self.assertFalse(controller.send_bark("title", "body"))
         mocked_open.assert_not_called()
+        self.assertIn("BARK_URL is not configured", output.getvalue())
 
 
 class RotationTests(unittest.TestCase):
