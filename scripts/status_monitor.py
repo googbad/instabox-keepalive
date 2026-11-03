@@ -110,20 +110,20 @@ def main():
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
         with open(summary_path, "a", encoding="utf-8") as summary:
-            summary.write("## InstaBox read-only status\\n\\n")
-            summary.write(f"Checked: {report['checkedAt']} (UTC)\\n\\n")
+            summary.write("## InstaBox read-only status\n\n")
+            summary.write(f"Checked: {report['checkedAt']} (UTC)\n\n")
             if not report["machines"]:
-                summary.write("No machines returned.\\n")
+                summary.write("No machines returned.\n")
             else:
-                summary.write("| Machine | State | Ready | Runtime | 480-min remaining | Cooldown | Storage synced |\\n")
-                summary.write("|---|---|---:|---:|---:|---|---:|\\n")
+                summary.write("| Machine | State | Ready | Runtime | 480-min remaining | Cooldown | Storage synced |\n")
+                summary.write("|---|---|---:|---:|---:|---|---:|\n")
                 for item in report["machines"]:
                     summary.write(
                         f"| {item['name']} | {item['state']} | {item['ready']} | "
                         f"{item['elapsed'] or '—'} | {item['maxRunRemaining'] or '—'} | "
-                        f"{item['cooldownUntil'] or '—'} | {item['persistentStorageSynced']} |\\n"
+                        f"{item['cooldownUntil'] or '—'} | {item['persistentStorageSynced']} |\n"
                     )
-            summary.write("\\n> Read-only: this workflow does not execute commands or change machine state.\\n")
+            summary.write("\n> Read-only: this workflow does not execute commands or change machine state.\n")
     return 0
 
 
