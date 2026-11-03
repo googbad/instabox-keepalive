@@ -1,9 +1,10 @@
+
 name: InstaBox Read-only Status
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0,30 * * * *"
+    - cron: "*/20 * * * *"
 
 permissions: {}
 
@@ -28,3 +29,26 @@ jobs:
           INSTABOX_API_KEY: ${{ secrets.INSTABOX_API_KEY }}
           STATUS_OUTPUT: machines-status.json
         run: python3 scripts/status_monitor.py
+
+      - name: Check 470-minute warning
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path("machines-status.json").read_text())
+          for machine in data["machines"]:
+              name = machine["name"]
+              elapsed = machine["elapsed"]
+              remaining = machine["maxRunRemaining"]
+
+              print(f"Machine: {name}")
+              print(f"Elapsed: {elapsed}")
+              print(f"Remaining: {remaining}")
+
+              if machine["state"] == "running":
+                  print(
+                      f"::notice title=470-minute warning::"
+                      f"{name}: Check the machine's runtime and platform limits."
+                  )
+          PY
