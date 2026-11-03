@@ -183,6 +183,41 @@ def perform_rotation(machine):
     print(f"{name}: rotation confirmed; runStartedAt advanced to {refreshed_started.isoformat()}.")
 
 
+def recover_suspended(machine):
+    """Resume a machine left suspended after an interrupted rotation or platform timeout."""
+    mid = machine["id"]
+    name = machine.get("name") or mid
+    cooldown = parse_time(machine.get("cooldownUntil"))
+    if cooldown is not None and datetime.now(timezone.utc) < cooldown:
+        print(f"{name}: platform cooldown is still active; will check again next schedule.")
+        return
+
+    previous_started = parse_time(machine.get("runStartedAt"))
+    print(f"{name}: suspended with no active cooldown; attempting recovery resume.")
+    api_request("POST", f"/v1/machines/{mid}/resume")
+    resumed = wait_for_state(mid, "running")
+    refreshed_started = parse_time(resumed.get("runStartedAt"))
+
+    deadline = time.monotonic() + POLL_TIMEOUT
+    while refreshed_started is None and time.monotonic() < deadline:
+        time.sleep(POLL_INTERVAL)
+        resumed = fetch_machine(mid)
+        if resumed.get("state") != "running":
+            raise InstaBoxError(f"{name}: machine left running state after recovery resume")
+        refreshed_started = parse_time(resumed.get("runStartedAt"))
+
+    if refreshed_started is None or (
+        previous_started is not None and refreshed_started <= previous_started
+    ):
+        raise InstaBoxError(f"{name}: recovery resume completed but runStartedAt did not advance")
+
+    send_bark(
+        "InstaBox 已从暂停状态恢复",
+        f"机器：{name}\\n结果：已恢复 running\\n新 runStartedAt：{refreshed_started.isoformat()}",
+    )
+    print(f"{name}: suspended-machine recovery confirmed.")
+
+
 def keepalive_exec(machine):
     mid = machine["id"]
     name = machine.get("name") or mid
@@ -224,8 +259,17 @@ def main():
                 continue
 
             state = machine.get("state")
+            if state == "suspended":
+                try:
+                    recover_suspended(machine)
+                except Exception as error:
+                    detail = f"{name}: recovery resume failed: {error}"
+                    print(f"::error::{detail}", file=sys.stderr)
+                    failures.append(detail)
+                    send_bark("InstaBox 暂停恢复失败", detail)
+                continue
             if state != "running":
-                print(f"{name}: state={state}; no automatic wake action is configured.")
+                print(f"{name}: state={state}; no automatic action for this state.")
                 continue
 
             started = parse_time(machine.get("runStartedAt"))
