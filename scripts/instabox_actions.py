@@ -244,7 +244,8 @@ def main():
                 print(f"::error::{detail}", file=sys.stderr)
                 failures.append(detail)
                 # A rotation/exec failure is user-actionable; notify once in this invocation.
-                send_bark("InstaBox 自动保活失败", detail)
+                if elapsed >= ROTATE_AFTER_SECONDS:
+                    send_bark("InstaBox 450 分钟轮换失败", detail)
 
         if failures:
             print(f"{len(failures)} machine operation(s) failed.", file=sys.stderr)
