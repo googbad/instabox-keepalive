@@ -1,6 +1,11 @@
 name: InstaBox Keepalive Controller
 
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/instabox-keepalive.yml"
+      - "scripts/instabox_actions.py"
+      - "tests/**"
   workflow_dispatch:
     inputs:
       enable_automation:
@@ -34,7 +39,7 @@ jobs:
     timeout-minutes: 8
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs.enable_automation == true)
-      || vars.INSTABOX_AUTOMATION_ENABLED == 'true'
+      || (github.event_name == 'schedule' && vars.INSTABOX_AUTOMATION_ENABLED == 'true')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
