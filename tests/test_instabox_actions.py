@@ -100,5 +100,38 @@ class RotationTests(unittest.TestCase):
         bark.assert_not_called()
 
 
+class RecoveryTests(unittest.TestCase):
+    @patch.object(controller, "send_bark", return_value=True)
+    @patch.object(controller, "wait_for_state")
+    @patch.object(controller, "api_request")
+    def test_resumes_suspended_machine_and_notifies(self, api, wait, bark):
+        wait.return_value = {
+            "state":"running",
+            "runStartedAt":"2026-11-03T07:40:00Z",
+        }
+        controller.recover_suspended({
+            "id":"m1",
+            "name":"test-machine",
+            "state":"suspended",
+            "runStartedAt":"2026-11-03T00:00:00Z",
+        })
+        api.assert_called_once_with("POST", "/v1/machines/m1/resume")
+        bark.assert_called_once()
+
+    @patch.object(controller, "send_bark")
+    @patch.object(controller, "api_request")
+    def test_waits_during_active_cooldown(self, api, bark):
+        from datetime import timedelta
+        future = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
+        controller.recover_suspended({
+            "id":"m1",
+            "name":"test-machine",
+            "state":"suspended",
+            "cooldownUntil":future,
+        })
+        api.assert_not_called()
+        bark.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
