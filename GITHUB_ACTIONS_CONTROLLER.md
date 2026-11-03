@@ -26,6 +26,7 @@ The variable is deliberately absent by default, so scheduled runs execute tests 
 - Every invocation reads `GET /v1/machines` and uses the platform `runStartedAt` as the timer.
 - Running machines receive one lightweight `exec` before 450 minutes.
 - At or after 450 minutes, the controller performs `suspend → wait suspended → resume → wait running`.
+- If a machine is found suspended after an interrupted rotation or platform timeout, the controller waits out any reported cooldown and then attempts recovery resume.
 - Rotation is reported successful only after `runStartedAt` advances.
 - Bark sends success/failure notifications for lifecycle rotation; ordinary keepalive execs are silent.
 - No local state file or Oracle VPS loop is used.
