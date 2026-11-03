@@ -24,7 +24,7 @@ class ApiRequestTests(unittest.TestCase):
         response = MagicMock()
         response.__enter__.return_value.read.return_value = b'{"state":"suspended"}'
         mocked_open.return_value = response
-        with patch.dict(os.environ, {"INSTABOX_API_KEY": "dummy-test-key"}):
+        with patch.object(controller, "API_KEY", "dummy-test-key"):
             controller.api_request("POST", "/v1/machines/m1/suspend")
         request = mocked_open.call_args.args[0]
         self.assertTrue(request.get_header("Idempotency-key"))
@@ -34,7 +34,7 @@ class ApiRequestTests(unittest.TestCase):
         response = MagicMock()
         response.__enter__.return_value.read.return_value = b'{"exitCode":0}'
         mocked_open.return_value = response
-        with patch.dict(os.environ, {"INSTABOX_API_KEY": "dummy-test-key"}):
+        with patch.object(controller, "API_KEY", "dummy-test-key"):
             controller.api_request("POST", "/v1/machines/m1/exec", {"cmd":"date"})
         request = mocked_open.call_args.args[0]
         self.assertIsNone(request.get_header("Idempotency-key"))
