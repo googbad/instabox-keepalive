@@ -1,0 +1,50 @@
+name: InstaBox Keepalive Controller
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/instabox-keepalive.yml"
+      - "scripts/instabox_actions.py"
+      - "tests/**"
+  workflow_dispatch:
+    inputs:
+      enable_automation:
+        description: "Explicitly enable InstaBox API writes for this manual run"
+        required: true
+        type: boolean
+        default: false
+  schedule:
+    - cron: "*/20 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: instabox-keepalive-controller
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run offline tests
+        run: python3 -m unittest discover -s tests -v
+
+  controller:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.enable_automation == true)
+      || (github.event_name == 'schedule' && vars.INSTABOX_AUTOMATION_ENABLED == 'true')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run InstaBox controller
+        env:
+          INSTABOX_API_KEY: ${{ secrets.INSTABOX_API_KEY }}
+          BARK_URL: ${{ secrets.BARK_URL }}
+        run: python3 scripts/instabox_actions.py
