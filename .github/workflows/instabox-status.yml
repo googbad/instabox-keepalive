@@ -20,6 +20,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Run offline unit tests
+        run: python3 -m unittest discover -s tests -v
+
       - name: Query and summarize InstaBox machine status
         env:
           INSTABOX_API_KEY: ${{ secrets.INSTABOX_API_KEY }}
