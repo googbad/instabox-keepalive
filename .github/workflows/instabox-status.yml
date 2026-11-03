@@ -1,0 +1,38 @@
+
+name: InstaBox Read-only Status
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check-status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Query InstaBox machine status
+        env:
+          INSTABOX_API_KEY: ${{ secrets.INSTABOX_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$INSTABOX_API_KEY" ]; then
+            echo "::error::INSTABOX_API_KEY secret is missing"
+            exit 1
+          fi
+
+          echo "Querying InstaBox machine list (read-only)..."
+
+          curl --fail-with-body --silent --show-error \
+            --request GET \
+            --header "X-API-Key: ${INSTABOX_API_KEY}" \
+            --header "Idempotency-Key: github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --header "Accept: application/json" \
+            https://api.instabox.sh/v1/machines \
+            --output machines.json
+
+          echo "API request succeeded."
+          echo "Machine status response:"
+          python3 -m json.tool machines.json
